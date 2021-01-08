@@ -17,7 +17,8 @@ from .config import *
 from .utils import *
 from .alioss import *
 
-twqd = on_command("twqd", rule=to_me(), priority=5)
+twqd = on_command("twqd", rule=to_me(), priority=5,
+                  aliases=('体温签到', '签到'))
 
 
 @twqd.handle()
@@ -144,7 +145,8 @@ async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
 
 # Add User Event
 
-adduser = on_command("adduser", rule=to_me(), priority=5, permission=SUPERUSER)
+adduser = on_command("adduser", rule=to_me(), priority=5, permission=SUPERUSER,
+                     aliases=('添加', '添加用户'))
 
 
 @adduser.handle()
@@ -167,7 +169,12 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 
 async def adduserEvent(username: str, password: str, email: str):
-    pass
+    user_ = {
+        'school': '海南大学',
+        'username': username,
+        'password': password,
+        'email': email,
+    }
 
 
 # Query Event

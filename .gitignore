@@ -54,3 +54,4 @@ __pycache__
 *.xml
 dataset/
 alioss.py
+ALKAID_API.py

@@ -5,6 +5,7 @@
 
 import pytz
 import os
+from .ALKAID_API import *
 
 TIME_ZONE_CN = pytz.timezone('Asia/Shanghai')
 TWQD_DIR_NAME = 'twqd'
@@ -43,5 +44,4 @@ QUERY_NO_SUCH_TYPE_PROMPT = "没有该类型数据"
 
 SEND_LOG = False
 
-ALKAID_POST_API = 'https://alkaid.cn1.utools.club/cpds/api/stu_twqd'
-ADD_USER_API = 'https://alkaid.cn1.utools.club/cpdaily/api/item/quick_start'
+
