@@ -18,7 +18,7 @@ from .utils import *
 from .alioss import *
 
 twqd = on_command("twqd", rule=to_me(), priority=5,
-                  aliases=('体温签到', '签到'))
+                  aliases=set(['体温签到', '签到']))
 
 
 @twqd.handle()
@@ -75,111 +75,71 @@ async def handle(bot: Bot, event: Event, state: T_State):
         if SEND_LOG:
             await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
 
-        stu_num = await qq2stunum(user_id)
+        stu_num = qq2stunum(user_id)
         logger.debug(f'will process: {user_id} {stu_num}')
 
-        if SEND_LOG:
-            await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT + f'{stu_num}'))
-
         if not stu_num:
-            await twqdall.send(Message(at_ + TWQDALL_NOT_IN_DATASET_PROMPT))
+            # await twqdall.send(Message(at_ + TWQDALL_NOT_IN_DATASET_PROMPT))
             continue
 
+        await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT + f'{stu_num}'))
         await tempReportEvent(at_, stu_num, twqdall)
 
     await twqdall.finish(Message(TWQDALL_SUCCESS_PROMPT))
 
 
-async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
-    logger.debug(f'{stu_num} 开始签到')
-
-    # 有没有签到
-    oss = AliyunOSS()
-    if not oss.snp_exist(stu_num):
-        # API POST JSON
-        try:
-            json = await get_json(stu_num)
-            code = json['code']
-        except JSONDecodeError:
-            logger.error(NULL_PROMPT)
-            if SEND_LOG:
-                macher.send(Message(NULL_PROMPT))
-
-        logger.debug(f'已获得json: {json}')
-
-        # CODE
-        if code == CODE_SUCCESS:
-            msg = Message(at_ + SUCCESS_PROMPT)
-            await macher.send(msg)
-        elif code == CODE_FAILED:
-            msg = Message(at_ + FAILED_PROMPT)
-            await macher.send(msg)
-            return
-        elif code == CODE_PERMISSION_ERROR:
-            msg = Message(at_ + PERMISSION_ERROR_PROMPT)
-            await macher.send(msg)
-            return
-
-    logger.debug('oss上已存在信息')
-
-    # 从OSS下载文件
-    resp = await oss.download_snp(stu_num)
-    if not resp:
-        msg = Message(at_ + DOWNLOAD_FAILED_PROMPT)
-        await macher.send(msg)
-        return
-
-    logger.debug('截图下载成功')
-
-    txt_path = SERVER_DIR_SCREENSHOT + f"/{stu_num}.txt"
-    img_path = await conv_file(txt_path)
-
-    logger.debug('截图转换成功，准备发送！')
-
-    # reply = Message("[CQ:at,qq={}] [CQ:image,file={}]".format(user_id, img_path))
-    # await macher.send(Message(unescape("[CQ:image,file=20181620310156.png]")))
-    # logger.debug('image_path: {}'.format(img_path))
-    reply = Message(unescape("[CQ:image,file={}]".format(img_path)))
-    await macher.send(reply)
-
-
 # Add User Event
 
 adduser = on_command("adduser", rule=to_me(), priority=5, permission=SUPERUSER,
-                     aliases=('添加', '添加用户'))
+                     aliases=set(['添加', '添加用户']))
 
 
 @adduser.handle()
 async def handle(bot: Bot, event: Event, state: T_State):
+    logger.debug('adduser called')
     args = str(event.get_message()).strip()
     if args:
         state["args"] = args
 
 
-@adduser.got("args", prompt=ARGS2_PROMPT)
+@adduser.got("args", prompt=ADDUSER_ARGS_PROMPT)
 async def handle(bot: Bot, event: Event, state: T_State):
     args = str(state["args"]).split()
-    try:
-        username, password, email = args
-    except Exception:
-        adduser.finish(Message(ADDUSER_ARGS_PROMPT))
+    if len(args) != 3:
+        await adduser.finish(Message(ADDUSER_ARGS_PROMPT))
 
+    username, password, email = args
     logger.debug(f'adduser: {username} {password} {email}')
-    await adduserEvent(username, password, email)
+    state['username'] = username
+    state['password'] = password
+    state['email'] = email
+    code = await addUserEvent(state)
+    if code == CODE_ADDUSER_ACCOUNT_EXIST:
+        await adduser.finish(Message(ADDUSER_ACCOUNT_EXIST_PROMPT))
+    elif code == CODE_ADDUSER_ACCOUNT_ERROR:
+        await adduser.finish(Message(ADDUSER_ACCOUNT_ERROR_PROMPT))
+    elif code == CODE_ADDUSER_EMAIL_ERROR:
+        await adduser.finish(Message(ADDUSER_EMAIL_ERROR_PROMPT))
+    elif code == CODE_ADDUSER_TOKEN_ERROR:
+        await adduser.finish(Message(ADDUSER_TOKEN_ERROR_PROMPT))
+    else:
+        await adduser.send(Message(ADDUSER_SID_PROMPT))
 
 
-async def adduserEvent(username: str, password: str, email: str):
-    user_ = {
-        'school': '海南大学',
-        'username': username,
-        'password': password,
-        'email': email,
-    }
+@adduser.got("sid", prompt=ADDUSER_SID_PROMPT)
+async def handle(bot: Bot, event: Event, state: T_State):
+    code = verifySid(state)
+    if code == CODE_ADDUSER_SID_ERROR:
+        await adduser.finish(Message(ADDUSER_SID_ERROR_PROMPT))
+    else:
+        # TODO: 添加到本地数据库
+        await adduser.finish(Message(CODE_ADDUSER_SUCCESS))
 
 
 # Query Event
 
-query = on_command("query", rule=to_me(), priority=5, permission=SUPERUSER)
+query = on_command("query", rule=to_me(), priority=5, permission=SUPERUSER,
+                   aliases=set(['查询用户']))
 
 
 @query.handle()
@@ -200,13 +160,13 @@ async def handle(bot: Bot, event: Event, state: T_State):
     type, key = args
     logger.debug(f'query: {type} {key}')
     if type == '学号':
-        qq = await stunum2qq(key)
+        qq = stunum2qq(key)
         if not qq:
             await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
         else:
             await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
     elif str(type).lower() == 'qq':
-        stunum = await qq2stunum(key)
+        stunum = qq2stunum(key)
         if not stunum:
             await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
         else:
