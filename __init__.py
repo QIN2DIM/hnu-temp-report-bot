@@ -75,7 +75,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
         if SEND_LOG:
             await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
 
-        stu_num = qq2stunum(user_id)
+        stu_num = await qq2stunum(user_id)
         logger.debug(f'will process: {user_id} {stu_num}')
 
         if not stu_num:
@@ -160,16 +160,40 @@ async def handle(bot: Bot, event: Event, state: T_State):
     type, key = args
     logger.debug(f'query: {type} {key}')
     if type == '学号':
-        qq = stunum2qq(key)
+        qq = await stunum2qq(key)
         if not qq:
             await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
         else:
             await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
     elif str(type).lower() == 'qq':
-        stunum = qq2stunum(key)
+        stunum = await qq2stunum(key)
         if not stunum:
             await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
         else:
             await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(stunum, key)))
     else:
         await query.finish(Message(QUERY_NO_SUCH_TYPE_PROMPT))
+
+
+# Add To MySQL
+add = on_command("add", rule=to_me(), priority=5, permission=SUPERUSER)
+
+
+@add.handle()
+async def handle(bot: Bot, event: Event, state: T_State):
+    args = str(event.get_message()).strip()
+    if args:
+        state["args"] = args
+
+
+@add.got("args", prompt=ADD_ARGS_PROMPT)
+async def handle(bot: Bot, event: Event, state: T_State):
+    user_id = event.get_user_id()
+    at_ = "[CQ:at,qq={}]".format(user_id)
+    args = str(state["args"]).split()
+    if len(args) == 1:
+        await addEvent(user_id, args[0], add)
+    elif len(args) == 2:
+        await addEvent(args[0], args[1], add)
+    else:
+        await add.finish(Message())

@@ -6,6 +6,13 @@
 import pytz
 import os
 from .alkaidapi import *
+import pymysql
+
+db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
+                     passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
+
+# 使用cursor()方法获取操作游标
+cursor = db.cursor()
 
 TIME_ZONE_CN = pytz.timezone('Asia/Shanghai')
 TWQD_DIR_NAME = 'twqd'
@@ -30,7 +37,6 @@ CODE_ADDUSER_EMAIL_SEND_ERROR = 104
 CODE_ADDUSER_SID_ERROR = 105
 CODE_ADDUSER_SUCCESS = 200
 CODE_ADDUSER_EMAIL_SEND = 300
-
 
 ENABLE_PRIVATE = False
 
@@ -64,6 +70,7 @@ QUERY_NO_DATA_PROMPT = "未查询到该用户"
 QUERY_DATA_FORMAT = "学号:{}, QQ:{}"
 QUERY_NO_SUCH_TYPE_PROMPT = "没有该类型数据"
 
+ADD_ARGS_PROMPT = "[QQ, 学号]"
 
 SEND_LOG = False
 
@@ -98,4 +105,3 @@ osh_status_code = {
     500: '体温截图上传成功。',
     501: '体温截图获取失败。可能原因为上传环节异常或登录超时（账号有误，操作超时）'
 }
-

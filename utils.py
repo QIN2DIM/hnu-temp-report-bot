@@ -17,44 +17,24 @@ from datetime import datetime
 import httpx
 from nonebot.log import logger
 
-import csv
 
-USER_DIC = {}
-RE_USER_DIC = {}
-
-
-def init_dic():
-    with open(os.path.join(PLUGINS_PATH, 'dataset/userdic.csv'), encoding='utf-8') as f:
-        f_csv = csv.reader(f)
-        for row in f_csv:
-            qq = row[2].split('@')[0]
-            stu_num = row[0]
-            USER_DIC[qq] = stu_num
-            RE_USER_DIC[stu_num] = qq
-        logger.debug(USER_DIC)
-
-    with open(os.path.join(PLUGINS_PATH, 'dataset/user.csv'), encoding='utf-8') as f:
-        f_csv = csv.reader(f)
-        for row in f_csv:
-            qq = row[2].split('@')[0]
-            stu_num = row[1]
-            USER_DIC[qq] = stu_num
-            RE_USER_DIC[stu_num] = qq
-        logger.debug(USER_DIC)
-
-
-init_dic()
-
-
-def qq2stunum(qq: str):
-    if qq in USER_DIC.keys():
-        return USER_DIC[qq]
+async def qq2stunum(qq: str):
+    sql = "SELECT * FROM twqd WHERE QQ={}".format(qq)
+    cursor.execute(sql)
+    # 获取所有记录列表
+    results = cursor.fetchall()
+    if results:
+        return results[0][1]
     return None
 
 
-def stunum2qq(stunum: str):
-    if stunum in RE_USER_DIC.keys():
-        return RE_USER_DIC[stunum]
+async def stunum2qq(stunum: str):
+    sql = "SELECT * FROM twqd WHERE STUNUM={}".format(stunum)
+    cursor.execute(sql)
+    # 获取所有记录列表
+    results = cursor.fetchall()
+    if results:
+        return results[0][0]
     return None
 
 
@@ -74,12 +54,13 @@ async def get_json(username: str):
         'username': username
     }
     async with httpx.AsyncClient() as client:
-        resp = await client.post(ALKAID_TWQD_PLUS_API, data=user)
+        resp = await client.post(ALKAID_TWQD_API, data=user)
+    logger.debug(resp)
 
     return resp.json()
 
 
-async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
+async def tempReportEvent(at_: str, stu_num: str, matcher: Matcher):
     logger.debug(f'{stu_num} 开始签到')
 
     # 有没有签到
@@ -92,7 +73,7 @@ async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
         except JSONDecodeError:
             logger.error(NULL_PROMPT)
             if SEND_LOG:
-                macher.send(Message(NULL_PROMPT))
+                matcher.send(Message(NULL_PROMPT))
             return
 
         logger.debug(f'已获得json: {json}')
@@ -102,14 +83,14 @@ async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
         # CODE
         if code == CODE_SUCCESS:
             msg = Message(at_ + SUCCESS_PROMPT)
-            await macher.send(msg)
+            await matcher.send(msg)
         elif code == CODE_FAILED:
             msg = Message(at_ + FAILED_PROMPT)
-            await macher.send(msg)
+            await matcher.send(msg)
             return
         elif code == CODE_PERMISSION_ERROR:
             msg = Message(at_ + PERMISSION_ERROR_PROMPT)
-            await macher.send(msg)
+            await matcher.send(msg)
             return
 
     logger.debug('oss上已存在信息')
@@ -118,7 +99,7 @@ async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
     resp = await oss.download_snp(stu_num)
     if not resp:
         msg = Message(at_ + DOWNLOAD_FAILED_PROMPT)
-        await macher.send(msg)
+        await matcher.send(msg)
         return
 
     logger.debug('截图下载成功')
@@ -132,7 +113,7 @@ async def tempReportEvent(at_: str, stu_num: str, macher: Matcher):
     # await macher.send(Message(unescape("[CQ:image,file=20181620310156.png]")))
     # logger.debug('image_path: {}'.format(img_path))
     reply = Message(unescape("[CQ:image,file={}]".format(img_path)))
-    await macher.send(reply)
+    await matcher.send(reply)
 
 
 async def addUserEvent(state: T_State):
@@ -205,3 +186,21 @@ async def verifySid(state: T_State):
             return CODE_ADDUSER_SUCCESS
         else:
             return CODE_ADDUSER_SID_ERROR
+
+
+async def addEvent(qq: str, stunum: str, matcher: Matcher):
+    # TODO
+    pass
+    sql = """INSERT INTO twqd(QQ,STUNUM,NAME,SCHOOL,UNIVERSITY)
+                 VALUES ('{}', '{}', '{}', '{}', '{}')"""
+    try:
+        # 执行sql语句
+        logger.debug(sql.format(qq, stunum, '', '', ''))
+        cursor.execute(sql.format(qq, stunum, '', '', ''))
+        # 提交到数据库执行
+        db.commit()
+    except:
+        # Rollback in case there is any error
+        logger.debug(qq, stunum)
+        logger.debug('FAILED')
+        db.rollback()
