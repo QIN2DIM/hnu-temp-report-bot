@@ -1,17 +1,5 @@
 ![hnu-temp-report-bot](https://socialify.git.ci/beiyuouo/hnu-temp-report-bot/image?description=1&font=Source%20Code%20Pro&forks=1&issues=1&language=1&logo=https%3A%2F%2Favatars0.githubusercontent.com%2Fu%2F44976445%3Fs%3D460%26amp%3Bu%3D182d335f502ab38522bde613717bd77aa1f6f766%26amp%3Bv%3D4&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Light)
 
-<!-- MarkdownTOC -->
-
-- [Introduction](#introduction)
-- [食用指北](#%E9%A3%9F%E7%94%A8%E6%8C%87%E5%8C%97)
-    - [部署和配置](#%E9%83%A8%E7%BD%B2%E5%92%8C%E9%85%8D%E7%BD%AE)
-    - [命令](#%E5%91%BD%E4%BB%A4)
-- [Changelog](#changelog)
-    - [20210111 v0.9.1](#20210111-v091)
-- [TODO](#todo)
-
-<!-- /MarkdownTOC -->
-
 ## Introduction
 
 本项目基于<a href="https://github.com/nonebot/nonebot2">nonebot2</a>和<a href="https://github.com/Mrs4s/go-cqhttp">go-cqhttp</a>开发，用于HainanUnverisity的同学进行每日的体温上报，并可发送截图
@@ -65,6 +53,8 @@ python bot.py
 ## Changelog
 
 ### 20210111 v0.9.1
+
+仍有部分内容未完成，有BUG请提issue
 
 ## TODO
 
