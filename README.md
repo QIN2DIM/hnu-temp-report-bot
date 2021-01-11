@@ -1,3 +1,5 @@
+![hnu-temp-report-bot](https://socialify.git.ci/beiyuouo/hnu-temp-report-bot/image?description=1&font=Source%20Code%20Pro&forks=1&issues=1&language=1&logo=https%3A%2F%2Favatars0.githubusercontent.com%2Fu%2F44976445%3Fs%3D460%26amp%3Bu%3D182d335f502ab38522bde613717bd77aa1f6f766%26amp%3Bv%3D4&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Light)
+
 ## Introduction
 
 本项目基于<a href="https://github.com/nonebot/nonebot2">nonebot2</a>和<a href="https://github.com/Mrs4s/go-cqhttp">go-cqhttp</a>开发，用于HainanUnverisity的同学进行每日的体温上报，并可发送截图
