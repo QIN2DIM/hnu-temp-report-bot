@@ -2,7 +2,7 @@
 
 本项目基于<a href="https://github.com/nonebot/nonebot2">nonebot2</a>和<a href="https://github.com/Mrs4s/go-cqhttp">go-cqhttp</a>开发，用于HainanUnverisity的同学进行每日的体温上报，并可发送截图
 
-后端使用MySQL存储QQ-学号映射，API由<a href="https://github.com/QIN2DIM/CampusDailyAutoSign">ALKAID</a>提供
+后端使用MySQL存储QQ-学号映射，API由[`ALKAID`](https://github.com/QIN2DIM/CampusDailyAutoSign)提供
 
 - ps: 对于HainanUnverisity的同学，可以将bot(851722457)拉到群中进行签到，bot会自动同意加群和好友请求. 如需twqdall，请联系superadmin(729320011,471591513)，进行信息录入
 
@@ -12,7 +12,7 @@
 
 ```sh
 pip install nb-cli
-pip install requestments.txt
+pip install -r requestments.txt
 # cd到nonebot2插件目录
 git clone git@github.com:beiyuouo/hnu-temp-report-bot.git
 # 修改配置
