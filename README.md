@@ -6,7 +6,7 @@
 
 后端使用MySQL存储QQ-学号映射，API由[`ALKAID`](https://github.com/QIN2DIM/CampusDailyAutoSign)提供
 
-- ps: 对于HainanUnverisity的同学，可以将bot(851722457)拉到群中进行签到，bot会自动同意加群和好友请求. 如需twqdall，请联系superadmin(729320011,471591513)，进行信息录入
+ps: 对于HainanUnverisity的同学，可以将bot(851722457)拉到群中进行签到，bot会自动同意加群和好友请求. 如需twqdall，请联系superadmin(729320011,471591513)，进行信息录入
 
 ## 食用指北
 
