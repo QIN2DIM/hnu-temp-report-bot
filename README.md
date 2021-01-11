@@ -34,6 +34,8 @@ AccessKeySecret = '' # CHANGE OSS secret
 bucket_name = '' # CHANGE OSS bucket
 oss2.Bucket(auth, '', bucket_name) # CHANGE OSS host
 
+# 建立MySQL数据库和表结构
+# 内容在sql.sql文件中
 # 启动bot
 python bot.py
 ```
