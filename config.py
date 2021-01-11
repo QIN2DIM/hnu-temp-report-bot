@@ -8,18 +8,12 @@ import os
 from .alkaidapi import *
 import pymysql
 
-db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
-                     passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
-
-# 使用cursor()方法获取操作游标
-cursor = db.cursor()
-
 TIME_ZONE_CN = pytz.timezone('Asia/Shanghai')
-TWQD_DIR_NAME = 'twqd'
+TWQD_DIR_NAME = 'twqd' # 截图文件夹
 IMAGE_DIR = 'data/images'
-GOCQ_PATH = '/root/chatbot'
-SERVER_DIR_SCREENSHOT = os.path.join(GOCQ_PATH, IMAGE_DIR, TWQD_DIR_NAME)
-PLUGINS_PATH = 'awesome_bot/plugins/twqd'
+GOCQ_PATH = '' # CHANGE TO YOUR GOCQHTTP RUNNING PATH
+SERVER_DIR_SCREENSHOT = os.path.join(GOCQ_PATH, IMAGE_DIR, TWQD_DIR_NAME) # 截图保存路径
+PLUGINS_PATH = 'awesome_bot/plugins/hnu-temp-report-bot' # CHANGE TO YOUR PLUGINS PATH 
 
 CODE_SUCCESS = 200
 CODE_FAILED = 102
@@ -48,9 +42,9 @@ SUCCESS_PROMPT = "签到成功啦！"
 FAILED_PROMPT = "签到失败啦！"
 PERMISSION_ERROR_PROMPT = "目前还没有你的数据哟，请先联系管理员~"
 NOT_EXIST_PROMPT = "目前OSS还没有存你的数据哟~"
-DOWNLOAD_FAILED_PROMPT = "下载失败了，哭哭~"
+DOWNLOAD_FAILED_PROMPT = "已经给您签到成功，但没有您的password无法进行截图哟，哭哭~"
 
-ADDUSER_ARGS_PROMPT = "[学号，密码，邮箱]"
+ADDUSER_ARGS_PROMPT = "学号，密码，邮箱"
 ADDUSER_SID_PROMPT = "请查看邮箱输入SID"
 ADDUSER_ACCOUNT_EXIST_PROMPT = "用户已存在"
 ADDUSER_ACCOUNT_ERROR_PROMPT = "用户名或密码错误"

@@ -68,6 +68,10 @@ async def handle(bot: Bot, event: Event, state: T_State):
         await twqdall.send(Message(str(group_member_list)))
 
     # Map User
+    db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
+                         passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
+
+    cursor = db.cursor()
     for member in group_member_list:
         user_id = str(member['user_id'])
         logger.debug(f'processing: {user_id}')
@@ -75,17 +79,21 @@ async def handle(bot: Bot, event: Event, state: T_State):
         if SEND_LOG:
             await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
 
-        stu_num = await qq2stunum(user_id)
+        stu_num = await qq2stunum(user_id, cursor)
         logger.debug(f'will process: {user_id} {stu_num}')
 
         if not stu_num:
             # await twqdall.send(Message(at_ + TWQDALL_NOT_IN_DATASET_PROMPT))
             continue
 
-        await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT + f'{stu_num}'))
+        # await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT + f'{stu_num}'))
+        await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
         await tempReportEvent(at_, stu_num, twqdall)
 
+    db.close()
+    cursor.close()
     await twqdall.finish(Message(TWQDALL_SUCCESS_PROMPT))
+
 
 
 # Add User Event
@@ -156,23 +164,28 @@ async def handle(bot: Bot, event: Event, state: T_State):
     args = str(state["args"]).split()
     if len(args) != 2:
         await query.finish(Message(QUERY_ARGS_PROMPT))
+    db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
+                         passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
 
+    cursor = db.cursor()
     type, key = args
     logger.debug(f'query: {type} {key}')
     if type == '学号':
-        qq = await stunum2qq(key)
+        qq = await stunum2qq(key, cursor)
         if not qq:
             await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
         else:
             await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
     elif str(type).lower() == 'qq':
-        stunum = await qq2stunum(key)
+        stunum = await qq2stunum(key, cursor)
         if not stunum:
             await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
         else:
             await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(stunum, key)))
     else:
         await query.finish(Message(QUERY_NO_SUCH_TYPE_PROMPT))
+    db.close()
+    cursor.close()
 
 
 # Add To MySQL
@@ -196,4 +209,4 @@ async def handle(bot: Bot, event: Event, state: T_State):
     elif len(args) == 2:
         await addEvent(args[0], args[1], add)
     else:
-        await add.finish(Message())
+        await add.finish(Message(ADD_ARGS_PROMPT))

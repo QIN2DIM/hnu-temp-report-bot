@@ -18,7 +18,7 @@ import httpx
 from nonebot.log import logger
 
 
-async def qq2stunum(qq: str):
+async def qq2stunum(qq: str, cursor):
     sql = "SELECT * FROM twqd WHERE QQ={}".format(qq)
     cursor.execute(sql)
     # 获取所有记录列表
@@ -28,7 +28,7 @@ async def qq2stunum(qq: str):
     return None
 
 
-async def stunum2qq(stunum: str):
+async def stunum2qq(stunum: str, cursor):
     sql = "SELECT * FROM twqd WHERE STUNUM={}".format(stunum)
     cursor.execute(sql)
     # 获取所有记录列表
@@ -189,8 +189,10 @@ async def verifySid(state: T_State):
 
 
 async def addEvent(qq: str, stunum: str, matcher: Matcher):
-    # TODO
-    pass
+    db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
+                         passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
+
+    cursor = db.cursor()
     sql = """INSERT INTO twqd(QQ,STUNUM,NAME,SCHOOL,UNIVERSITY)
                  VALUES ('{}', '{}', '{}', '{}', '{}')"""
     try:
@@ -201,6 +203,9 @@ async def addEvent(qq: str, stunum: str, matcher: Matcher):
         db.commit()
     except:
         # Rollback in case there is any error
-        logger.debug(qq, stunum)
-        logger.debug('FAILED')
+        logger.debug(f'FAILED: qq:{qq}, stunum:{stunum}')
+        matcher.send('FAILED')
         db.rollback()
+
+    db.close()
+    cursor.close()

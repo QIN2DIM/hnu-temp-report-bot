@@ -53,6 +53,4 @@ __pycache__
 *.csv
 *.xml
 dataset/
-alioss.py
-alkaidapi.py
 add_to_db.py
