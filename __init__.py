@@ -17,7 +17,7 @@ from .config import *
 from .utils import *
 from .alioss import *
 
-twqd = on_command("twqd", rule=to_me(), priority=5,
+twqd = on_command("twqd", rule=to_me(), priority=1,
                   aliases=set(['体温签到', '签到']))
 
 
@@ -45,7 +45,7 @@ async def handle_event(bot: Bot, event: Event, state: T_State):
         await tempReportEvent(at_, stu_num, twqd)
 
 
-twqdall = on_command("twqdall", rule=to_me(), priority=5, permission=SUPERUSER)
+twqdall = on_command("twqdall", rule=to_me(), priority=1, permission=SUPERUSER)
 
 
 @twqdall.handle()
@@ -98,7 +98,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 # Add User Event
 
-adduser = on_command("adduser", rule=to_me(), priority=5, permission=SUPERUSER,
+adduser = on_command("adduser", rule=to_me(), priority=1, permission=SUPERUSER,
                      aliases=set(['添加', '添加用户']))
 
 
@@ -146,7 +146,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 # Query Event
 
-query = on_command("query", rule=to_me(), priority=5, permission=SUPERUSER,
+query = on_command("query", rule=to_me(), priority=1, permission=SUPERUSER,
                    aliases=set(['查询用户']))
 
 
@@ -189,7 +189,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 
 # Add To MySQL
-add = on_command("add", rule=to_me(), priority=5, permission=SUPERUSER)
+add = on_command("add", rule=to_me(), priority=1, permission=SUPERUSER)
 
 
 @add.handle()
