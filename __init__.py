@@ -13,6 +13,8 @@ from nonebot.adapters import Bot, Event
 from nonebot.adapters.cqhttp import Bot, unescape, MessageEvent, Message, MessageSegment
 from nonebot.log import logger
 
+import traceback
+
 from .config import *
 from .utils import *
 from .alioss import *
@@ -37,12 +39,18 @@ async def handle(bot: Bot, event: Event, state: T_State):
 async def handle_event(bot: Bot, event: Event, state: T_State):
     logger.debug('准备执行twqd')
 
-    stu_nums = str(state["stu_nums"]).split()
-    user_id = event.get_user_id()
-    at_ = "[CQ:at,qq={}]".format(user_id)
-    for stu_num in stu_nums:
-        # TODO: stu_num check
-        await tempReportEvent(at_, stu_num, twqd)
+    try:
+        stu_nums = str(state["stu_nums"]).split()
+        user_id = event.get_user_id()
+        at_ = "[CQ:at,qq={}]".format(user_id)
+        for stu_num in stu_nums:
+            # TODO: stu_num check
+            await tempReportEvent(at_, stu_num, twqd)
+    except Exception as e:
+        msg = f"Exception: {Exception}\n"
+        msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
+        msg += f"traceback.format_exc(): {traceback.format_exc()}"
+        await exception_log(bot, msg)
 
 
 twqdall = on_command("twqdall", rule=to_me(), priority=1, permission=SUPERUSER)
@@ -50,50 +58,55 @@ twqdall = on_command("twqdall", rule=to_me(), priority=1, permission=SUPERUSER)
 
 @twqdall.handle()
 async def handle(bot: Bot, event: Event, state: T_State):
-    if not ENABLE_PRIVATE and event.get_event_name().split(".")[1] != "group":
-        await twqdall.finish(Message(PRIVATE_PROMPT))
+    try:
+        if not ENABLE_PRIVATE and event.get_event_name().split(".")[1] != "group":
+            await twqdall.finish(Message(PRIVATE_PROMPT))
 
-    logger.debug(f'session id: {event.get_session_id()}')
-    logger.debug(f'event description: {event.get_event_description()}')
-    # event description: Message -639288931 from 729320011@[群:1001320858] ""
-    group_id = str(event.dict()['group_id'])
-    logger.debug(f'group id {group_id}')
-    if SEND_LOG:
-        await twqdall.send(Message(group_id))
-
-    # Get All User
-    group_member_list = await bot.get_group_member_list(group_id=group_id)
-    logger.debug(group_member_list)
-    if SEND_LOG:
-        await twqdall.send(Message(str(group_member_list)))
-
-    # Map User
-    db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
-                         passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
-
-    cursor = db.cursor()
-    for member in group_member_list:
-        user_id = str(member['user_id'])
-        logger.debug(f'processing: {user_id}')
-        at_ = "[CQ:at,qq={}]".format(user_id)
+        logger.debug(f'session id: {event.get_session_id()}')
+        logger.debug(f'event description: {event.get_event_description()}')
+        # event description: Message -639288931 from 729320011@[群:1001320858] ""
+        group_id = str(event.dict()['group_id'])
+        logger.debug(f'group id {group_id}')
         if SEND_LOG:
+            await twqdall.send(Message(group_id))
+
+        # Get All User
+        group_member_list = await bot.get_group_member_list(group_id=group_id)
+        logger.debug(group_member_list)
+        if SEND_LOG:
+            await twqdall.send(Message(str(group_member_list)))
+
+        # Map User
+        db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
+                             passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
+
+        cursor = db.cursor()
+        for member in group_member_list:
+            user_id = str(member['user_id'])
+            logger.debug(f'processing: {user_id}')
+            at_ = "[CQ:at,qq={}]".format(user_id)
+            if SEND_LOG:
+                await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
+
+            stu_num = await qq2stunum(user_id, cursor)
+            logger.debug(f'will process: {user_id} {stu_num}')
+
+            if not stu_num:
+                # await twqdall.send(Message(at_ + TWQDALL_NOT_IN_DATASET_PROMPT))
+                continue
+
+            # await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT + f'{stu_num}'))
             await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
+            await tempReportEvent(at_, stu_num, twqdall)
 
-        stu_num = await qq2stunum(user_id, cursor)
-        logger.debug(f'will process: {user_id} {stu_num}')
-
-        if not stu_num:
-            # await twqdall.send(Message(at_ + TWQDALL_NOT_IN_DATASET_PROMPT))
-            continue
-
-        # await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT + f'{stu_num}'))
-        await twqdall.send(Message(at_ + TWQDALL_RUNNING_PROMPT))
-        await tempReportEvent(at_, stu_num, twqdall)
-
-    db.close()
-    cursor.close()
-    await twqdall.finish(Message(TWQDALL_SUCCESS_PROMPT))
-
+        db.close()
+        cursor.close()
+        await twqdall.finish(Message(TWQDALL_SUCCESS_PROMPT))
+    except Exception as e:
+        msg = f"Exception: {Exception}\n"
+        msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
+        msg += f"traceback.format_exc(): {traceback.format_exc()}"
+        await exception_log(bot, msg)
 
 
 # Add User Event
@@ -112,36 +125,48 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 @adduser.got("args", prompt=ADDUSER_ARGS_PROMPT)
 async def handle(bot: Bot, event: Event, state: T_State):
-    args = str(state["args"]).split()
-    if len(args) != 3:
-        await adduser.finish(Message(ADDUSER_ARGS_PROMPT))
+    try:
+        args = str(state["args"]).split()
+        if len(args) != 3:
+            await adduser.finish(Message(ADDUSER_ARGS_PROMPT))
 
-    username, password, email = args
-    logger.debug(f'adduser: {username} {password} {email}')
-    state['username'] = username
-    state['password'] = password
-    state['email'] = email
-    code = await addUserEvent(state)
-    if code == CODE_ADDUSER_ACCOUNT_EXIST:
-        await adduser.finish(Message(ADDUSER_ACCOUNT_EXIST_PROMPT))
-    elif code == CODE_ADDUSER_ACCOUNT_ERROR:
-        await adduser.finish(Message(ADDUSER_ACCOUNT_ERROR_PROMPT))
-    elif code == CODE_ADDUSER_EMAIL_ERROR:
-        await adduser.finish(Message(ADDUSER_EMAIL_ERROR_PROMPT))
-    elif code == CODE_ADDUSER_TOKEN_ERROR:
-        await adduser.finish(Message(ADDUSER_TOKEN_ERROR_PROMPT))
-    else:
-        await adduser.send(Message(ADDUSER_SID_PROMPT))
+        username, password, email = args
+        logger.debug(f'adduser: {username} {password} {email}')
+        state['username'] = username
+        state['password'] = password
+        state['email'] = email
+        code = await addUserEvent(state)
+        if code == CODE_ADDUSER_ACCOUNT_EXIST:
+            await adduser.finish(Message(ADDUSER_ACCOUNT_EXIST_PROMPT))
+        elif code == CODE_ADDUSER_ACCOUNT_ERROR:
+            await adduser.finish(Message(ADDUSER_ACCOUNT_ERROR_PROMPT))
+        elif code == CODE_ADDUSER_EMAIL_ERROR:
+            await adduser.finish(Message(ADDUSER_EMAIL_ERROR_PROMPT))
+        elif code == CODE_ADDUSER_TOKEN_ERROR:
+            await adduser.finish(Message(ADDUSER_TOKEN_ERROR_PROMPT))
+        else:
+            await adduser.send(Message(ADDUSER_SID_PROMPT))
+    except Exception as e:
+        msg = f"Exception: {Exception}\n"
+        msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
+        msg += f"traceback.format_exc(): {traceback.format_exc()}"
+        await exception_log(bot, msg)
 
 
 @adduser.got("sid", prompt=ADDUSER_SID_PROMPT)
 async def handle(bot: Bot, event: Event, state: T_State):
-    code = verifySid(state)
-    if code == CODE_ADDUSER_SID_ERROR:
-        await adduser.finish(Message(ADDUSER_SID_ERROR_PROMPT))
-    else:
-        # TODO: 添加到本地数据库
-        await adduser.finish(Message(CODE_ADDUSER_SUCCESS))
+    try:
+        code = verifySid(state)
+        if code == CODE_ADDUSER_SID_ERROR:
+            await adduser.finish(Message(ADDUSER_SID_ERROR_PROMPT))
+        else:
+            # TODO: 添加到本地数据库
+            await adduser.finish(Message(CODE_ADDUSER_SUCCESS))
+    except Exception as e:
+        msg = f"Exception: {Exception}\n"
+        msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
+        msg += f"traceback.format_exc(): {traceback.format_exc()}"
+        await exception_log(bot, msg)
 
 
 # Query Event
@@ -159,33 +184,39 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 @query.got("args", prompt=QUERY_ARGS_PROMPT)
 async def handle(bot: Bot, event: Event, state: T_State):
-    user_id = event.get_user_id()
-    at_ = "[CQ:at,qq={}]".format(user_id)
-    args = str(state["args"]).split()
-    if len(args) != 2:
-        await query.finish(Message(QUERY_ARGS_PROMPT))
-    db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
-                         passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
+    try:
+        user_id = event.get_user_id()
+        at_ = "[CQ:at,qq={}]".format(user_id)
+        args = str(state["args"]).split()
+        if len(args) != 2:
+            await query.finish(Message(QUERY_ARGS_PROMPT))
+        db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
+                             passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
 
-    cursor = db.cursor()
-    type, key = args
-    logger.debug(f'query: {type} {key}')
-    if type == '学号':
-        qq = await stunum2qq(key, cursor)
-        if not qq:
-            await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
+        cursor = db.cursor()
+        type, key = args
+        logger.debug(f'query: {type} {key}')
+        if type == '学号':
+            qq = await stunum2qq(key, cursor)
+            if not qq:
+                await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
+            else:
+                await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
+        elif str(type).lower() == 'qq':
+            stunum = await qq2stunum(key, cursor)
+            if not stunum:
+                await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
+            else:
+                await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(stunum, key)))
         else:
-            await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
-    elif str(type).lower() == 'qq':
-        stunum = await qq2stunum(key, cursor)
-        if not stunum:
-            await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
-        else:
-            await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(stunum, key)))
-    else:
-        await query.finish(Message(QUERY_NO_SUCH_TYPE_PROMPT))
-    db.close()
-    cursor.close()
+            await query.finish(Message(QUERY_NO_SUCH_TYPE_PROMPT))
+        db.close()
+        cursor.close()
+    except Exception as e:
+        msg = f"Exception: {Exception}\n"
+        msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
+        msg += f"traceback.format_exc(): {traceback.format_exc()}"
+        await exception_log(bot, msg)
 
 
 # Add To MySQL
@@ -201,12 +232,18 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
 @add.got("args", prompt=ADD_ARGS_PROMPT)
 async def handle(bot: Bot, event: Event, state: T_State):
-    user_id = event.get_user_id()
-    at_ = "[CQ:at,qq={}]".format(user_id)
-    args = str(state["args"]).split()
-    if len(args) == 1:
-        await addEvent(user_id, args[0], add)
-    elif len(args) == 2:
-        await addEvent(args[0], args[1], add)
-    else:
-        await add.finish(Message(ADD_ARGS_PROMPT))
+    try:
+        user_id = event.get_user_id()
+        at_ = "[CQ:at,qq={}]".format(user_id)
+        args = str(state["args"]).split()
+        if len(args) == 1:
+            await addEvent(user_id, args[0], add)
+        elif len(args) == 2:
+            await addEvent(args[0], args[1], add)
+        else:
+            await add.finish(Message(ADD_ARGS_PROMPT))
+    except Exception as e:
+        msg = f"Exception: {Exception}\n"
+        msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
+        msg += f"traceback.format_exc(): {traceback.format_exc()}"
+        await exception_log(bot, msg)

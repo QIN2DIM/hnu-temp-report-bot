@@ -67,6 +67,7 @@ QUERY_NO_SUCH_TYPE_PROMPT = "没有该类型数据"
 ADD_ARGS_PROMPT = "[QQ, 学号]"
 
 SEND_LOG = False
+EXCEPTION_ADMIN = [{'type': 'group', 'id': ''}] # type: group or private, id: qq for group
 
 osh_status_code = {
     # 应立即结束任务

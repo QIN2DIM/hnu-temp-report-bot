@@ -6,6 +6,7 @@
 import base64
 from json.decoder import JSONDecodeError
 
+from nonebot.adapters import Bot
 from nonebot.adapters.cqhttp import Message, unescape
 from nonebot.matcher import Matcher
 from nonebot.typing import T_State
@@ -209,3 +210,13 @@ async def addEvent(qq: str, stunum: str, matcher: Matcher):
 
     db.close()
     cursor.close()
+
+
+async def exception_log(bot: Bot, msg: str):
+    for p in EXCEPTION_ADMIN:
+        if p['type'] == 'group':
+            await bot.call_api('send_group_msg', group_id=p['id'], message=msg)
+        elif p['type'] == 'private':
+            await bot.call_api('send_private_msg', user_id=p['id'], message=msg)
+        else:
+            await logger.debug(f'can not find exception admin type: {p}')

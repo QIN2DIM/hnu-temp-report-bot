@@ -29,6 +29,8 @@ QQMAP_PASSWORD = '' # CHANGE 数据库密码
 # config.py
 PLUGINS_PATH = 'awesome_bot/plugins/hnu-temp-report-bot' # CHANGE 插件目录
 GOCQ_PATH = '' # CHANGE GO-CQHTTP运行目录
+EXCEPTION_ADMIN = [{'type': 'group', 'id': ''}] # type: group or private, id: qq for group 
+# 如果需要输出异常进行监控，可以利用这个修改成QQ群号或是QQ号即可
 
 # alioss.py
 AccessKeyId = '' # CHANGE OSS key
@@ -61,4 +63,4 @@ python bot.py
 - [ ] 参数检查
 - [ ] 超级用户管理
 - [ ] QQ学号映射管理
-- [ ] 异常处理与异常报告
+- [x] 异常处理与异常报告
