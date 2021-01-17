@@ -28,7 +28,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
     # print(event.get_event_name().split(".")[1])
 
     if not ENABLE_PRIVATE and event.get_event_name().split(".")[1] != "group":
-        await twqd.finish(Message(PRIVATE_PROMPT))
+        await twqd.send(Message(PRIVATE_PROMPT))
 
     args = str(event.get_message()).strip()
     if args:
@@ -60,7 +60,7 @@ twqdall = on_command("twqdall", rule=to_me(), priority=1, permission=SUPERUSER)
 async def handle(bot: Bot, event: Event, state: T_State):
     try:
         if not ENABLE_PRIVATE and event.get_event_name().split(".")[1] != "group":
-            await twqdall.finish(Message(PRIVATE_PROMPT))
+            await twqdall.send(Message(PRIVATE_PROMPT))
 
         logger.debug(f'session id: {event.get_session_id()}')
         logger.debug(f'event description: {event.get_event_description()}')
@@ -101,7 +101,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
 
         db.close()
         cursor.close()
-        await twqdall.finish(Message(TWQDALL_SUCCESS_PROMPT))
+        await twqdall.send(Message(TWQDALL_SUCCESS_PROMPT))
     except Exception as e:
         msg = f"Exception: {Exception}\n"
         msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
@@ -128,7 +128,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
     try:
         args = str(state["args"]).split()
         if len(args) != 3:
-            await adduser.finish(Message(ADDUSER_ARGS_PROMPT))
+            await adduser.send(Message(ADDUSER_ARGS_PROMPT))
 
         username, password, email = args
         logger.debug(f'adduser: {username} {password} {email}')
@@ -137,13 +137,13 @@ async def handle(bot: Bot, event: Event, state: T_State):
         state['email'] = email
         code = await addUserEvent(state)
         if code == CODE_ADDUSER_ACCOUNT_EXIST:
-            await adduser.finish(Message(ADDUSER_ACCOUNT_EXIST_PROMPT))
+            await adduser.send(Message(ADDUSER_ACCOUNT_EXIST_PROMPT))
         elif code == CODE_ADDUSER_ACCOUNT_ERROR:
-            await adduser.finish(Message(ADDUSER_ACCOUNT_ERROR_PROMPT))
+            await adduser.send(Message(ADDUSER_ACCOUNT_ERROR_PROMPT))
         elif code == CODE_ADDUSER_EMAIL_ERROR:
-            await adduser.finish(Message(ADDUSER_EMAIL_ERROR_PROMPT))
+            await adduser.send(Message(ADDUSER_EMAIL_ERROR_PROMPT))
         elif code == CODE_ADDUSER_TOKEN_ERROR:
-            await adduser.finish(Message(ADDUSER_TOKEN_ERROR_PROMPT))
+            await adduser.send(Message(ADDUSER_TOKEN_ERROR_PROMPT))
         else:
             await adduser.send(Message(ADDUSER_SID_PROMPT))
     except Exception as e:
@@ -158,10 +158,10 @@ async def handle(bot: Bot, event: Event, state: T_State):
     try:
         code = verifySid(state)
         if code == CODE_ADDUSER_SID_ERROR:
-            await adduser.finish(Message(ADDUSER_SID_ERROR_PROMPT))
+            await adduser.send(Message(ADDUSER_SID_ERROR_PROMPT))
         else:
             # TODO: 添加到本地数据库
-            await adduser.finish(Message(CODE_ADDUSER_SUCCESS))
+            await adduser.send(Message(CODE_ADDUSER_SUCCESS))
     except Exception as e:
         msg = f"Exception: {Exception}\n"
         msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
@@ -189,7 +189,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
         at_ = "[CQ:at,qq={}]".format(user_id)
         args = str(state["args"]).split()
         if len(args) != 2:
-            await query.finish(Message(QUERY_ARGS_PROMPT))
+            await query.send(Message(QUERY_ARGS_PROMPT))
         db = pymysql.connect(host=QQMAP_HOST, port=3306, user=QQMAP_USERNAME,
                              passwd=QQMAP_PASSWORD, db="cpds_db", charset='utf8')
 
@@ -199,17 +199,17 @@ async def handle(bot: Bot, event: Event, state: T_State):
         if type == '学号':
             qq = await stunum2qq(key, cursor)
             if not qq:
-                await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
+                await query.send(Message(at_ + QUERY_NO_DATA_PROMPT))
             else:
-                await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
+                await query.send(Message(at_ + QUERY_DATA_FORMAT.format(key, qq)))
         elif str(type).lower() == 'qq':
             stunum = await qq2stunum(key, cursor)
             if not stunum:
-                await query.finish(Message(at_ + QUERY_NO_DATA_PROMPT))
+                await query.send(Message(at_ + QUERY_NO_DATA_PROMPT))
             else:
-                await query.finish(Message(at_ + QUERY_DATA_FORMAT.format(stunum, key)))
+                await query.send(Message(at_ + QUERY_DATA_FORMAT.format(stunum, key)))
         else:
-            await query.finish(Message(QUERY_NO_SUCH_TYPE_PROMPT))
+            await query.send(Message(QUERY_NO_SUCH_TYPE_PROMPT))
         db.close()
         cursor.close()
     except Exception as e:
@@ -241,7 +241,7 @@ async def handle(bot: Bot, event: Event, state: T_State):
         elif len(args) == 2:
             await addEvent(args[0], args[1], add)
         else:
-            await add.finish(Message(ADD_ARGS_PROMPT))
+            await add.send(Message(ADD_ARGS_PROMPT))
     except Exception as e:
         msg = f"Exception: {Exception}\n"
         msg += f"str(e): {str(e)}\nrepr(e): {repr(e)}\n"
