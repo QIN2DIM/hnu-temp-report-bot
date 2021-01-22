@@ -43,6 +43,7 @@ FAILED_PROMPT = "签到失败啦！"
 PERMISSION_ERROR_PROMPT = "目前还没有你的数据哟，请先联系管理员~"
 NOT_EXIST_PROMPT = "目前OSS还没有存你的数据哟~"
 DOWNLOAD_FAILED_PROMPT = "签到成功~"
+TWQD_ARGS_ERROR_PROMPT = "请输入正确的学号~"
 
 ADDUSER_ARGS_PROMPT = "[学号，密码，邮箱]"
 ADDUSER_SID_PROMPT = "请查看邮箱输入SID"

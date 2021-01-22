@@ -14,6 +14,7 @@ from nonebot.adapters.cqhttp import Bot, unescape, MessageEvent, Message, Messag
 from nonebot.log import logger
 
 import traceback
+import re
 
 from .config import *
 from .utils import *
@@ -45,6 +46,9 @@ async def handle_event(bot: Bot, event: Event, state: T_State):
         at_ = "[CQ:at,qq={}]".format(user_id)
         for stu_num in stu_nums:
             # TODO: stu_num check
+            if not re.match('[0-9]{8,16}', stu_num):
+                await twqd.send(Message(at_ + TWQD_ARGS_ERROR_PROMPT))
+                continue
             await tempReportEvent(at_, stu_num, twqd)
     except Exception as e:
         msg = f"Exception: {Exception}\n"

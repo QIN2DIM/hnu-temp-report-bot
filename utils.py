@@ -54,7 +54,7 @@ async def get_json(username: str):
     user = {
         'username': username
     }
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=False) as client:
         resp = await client.post(ALKAID_TWQD_API, data=user)
     logger.debug(resp)
 
